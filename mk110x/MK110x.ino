@@ -1,12 +1,13 @@
 /* Copyright (C) 2018 by Wayne E. Wright, W5XD
  *  Round Rock, Texas
  *  
- * MK-1101 and MK-1102 multi-keyer SO2R controller.
+ * MK-1101 / MK-1102 / MK-1103 multi-keyer SO2R controller.
+ * 
  * This sketch is an arduino implementation of the MK-1100 keyer originally
  * implemented on a Motorola 68HC705P microprocessor.
  * It is as close as I could think of to a literal port. The timer
  * is set to interrupt at 512usec intervals to match that used
- * in the MK-1100. This firmware works on both the MK-1101 and MK-1102
+ * in the MK-1100. This firmware works on the MK-1101, MK-1102, MK-1103
  * variants.
  * 
  * For programming novices that might be reading this:
@@ -24,7 +25,17 @@
 #include <SPI.h>
 #include <EEPROM.h>
 
-#define SPI_MK1101_HZ  10000000L // The line driver chips are rated to 10MHz
+#define MK1101_BUILD_DEFINITION 1
+#define MK1102_BUILD_DEFINITION 1 // MK1101/MK1102 have identical code
+#define MK1103_BUILD_DEFINITION 3 // different because the serial out on SPI has one more byte
+
+#define MK110X_BUILD MK1103_BUILD_DEFINITION
+
+#if (MK110X_BUILD == MK1101_BUILD_DEFINITION)
+#define SPI_MK110x_HZ  10000000L // The line driver chips are rated to 10MHz
+#else
+#define SPI_MK110x_HZ   1000000L // The low pass on the MK1103 is about 4MHz
+#endif
 
 namespace {
 /* The Ardunio Pro Mini has 20 I/O pins. ALL are allocated.
@@ -43,7 +54,7 @@ namespace {
     //SPI to talk to aux BOARD
     const int SPI_SCK = 13;
     const int SPI_MOSI = 11;
-// The MK-1102 aux board is on SPI on select pin 10
+// The MK-1102/1103 aux board is on SPI on select pin 10
     const int AUX_SELECT_PIN = 10;
     const int FOOTRING_PIN = A7;
 
@@ -181,7 +192,13 @@ namespace {
 void setup()
 {
     Serial.begin(9600); // Serial I/O is for debugging only
-    Serial.println("MK1101");
+    Serial.println(
+#if (MK110X_BUILD == MK1101_BUILD_DEFINITION)
+        F("MK1101/MK1102")
+#else
+        F("MK1103")
+#endif
+    );
 
     // These pins have nothing to do with Serial library
     // The MK-1101 is the Data Set (not Data Terminal)
@@ -309,9 +326,14 @@ namespace aux {
     void ToAuxBoard(uint8_t v, uint8_t ant)
     {
         digitalWrite(AUX_SELECT_PIN, LOW);
-        SPI.beginTransaction(SPISettings(SPI_MK1101_HZ, MSBFIRST, SPI_MODE3));
+        SPI.beginTransaction(SPISettings(SPI_MK110x_HZ, MSBFIRST, SPI_MODE3));
         SPI.transfer(v);
         SPI.transfer(ant);
+#if (MK110X_BUILD == MK1103_BUILD_DEFINITION)
+        // the MK1103 circuit has 3 bytes in the shift register, and the closest
+        // one to this MCU has K11/K12 control in same bits as farthest one in MK1102
+        SPI.transfer(v);
+#endif
         SPI.endTransaction();
         digitalWrite(AUX_SELECT_PIN, HIGH);
     }
