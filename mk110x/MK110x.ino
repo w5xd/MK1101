@@ -75,6 +75,7 @@ namespace {
     const int KNOB_EPROM_IDX = 0;
     const int KNOB_REVERSE_IDX = 1;
     const int PTT_DELAY_IDX=2;
+    const int LR_SWITCH_REVERSE_IDX = 3;
 
     void MANLRCHECK();
     void ARSCLR();
@@ -837,7 +838,7 @@ namespace {
         RTS
         */
         LockInterrupts l;
-        bool manLr = (HIGH == digitalRead(LRSWITCH_PIN));
+        bool manLr = (HIGH == digitalRead(LRSWITCH_PIN)) ^ (EEPROM.read(LR_SWITCH_REVERSE_IDX) == 0);
         auto tempStat = host::STSTATUS;
         bool stManLr = (0 != (tempStat & host::MANLRSEL));
         if (stManLr != manLr)
@@ -1782,6 +1783,8 @@ namespace diag {
     char fromHostbuffer[HOST_BUFFER_LENGTH + 1]; // +1 so we can add trailing null
     int charsInBuf = 0;
     void SelfTest();
+    void SOUNDTEST();
+    void SPEEDTEST();
 
     uint8_t asciiToBin(const char *p)
     {
@@ -1800,6 +1803,8 @@ namespace diag {
         static const char printOn[]  = "printOn";
         static const char printOff[]  = "printOff";
         static const char printCount[] = "printCount";
+        static const char potLR[] = "potLR";
+        static const char sound[] = "sound";
         static const char knobSpd[]  = "knobSpd=";
         static const unsigned knobSpdLen = -1 + sizeof(knobSpd) / sizeof(knobSpd[0]);
         static const char DCDup[]  = "DCDup";
@@ -1811,7 +1816,10 @@ namespace diag {
         static const char knob[] = "readKnob";
         static const char knobRev[] = "knobRev";
         static const char knobFwd[] = "knowFwd";
+        static const char lrNormal[] = "LRnormal";
+        static const char lrRev[] = "LRrev";
         static const char pttDel[] = "pttDel=";
+        static const char paddles[] = "paddles";
         static const unsigned pttDelLen = -1 + sizeof(pttDel);
         if (strcmp(fromHostbuffer, printOn) == 0)
             printCommands = true;
@@ -1822,22 +1830,25 @@ namespace diag {
             Serial.print(F("512 usec counter: "));
             Serial.println(cw::getCount());
             echo = false;
-        } else if (strncmp(fromHostbuffer, knobSpd, knobSpdLen) == 0)
+        }
+        else if (strncmp(fromHostbuffer, knobSpd, knobSpdLen) == 0)
         {   // simulate turning the pot
             uint8_t s = asciiToBin(fromHostbuffer + knobSpdLen);
             KNOBSPD = s;
             cw::DOTLEN = s;
             cw::LTRLEN = s << 1;
-        } else if (strncmp(fromHostbuffer, pttDel, pttDelLen) == 0)
+        }
+        else if (strncmp(fromHostbuffer, pttDel, pttDelLen) == 0)
         {
             uint8_t s = asciiToBin(fromHostbuffer + pttDelLen);
-            EEPROM.write(PTT_DELAY_IDX ,s);
+            EEPROM.write(PTT_DELAY_IDX, s);
             ptt::PTTDELAY = s;
-        } else if (strcmp(fromHostbuffer, DCDup) == 0)
+        }
+        else if (strcmp(fromHostbuffer, DCDup) == 0)
             digitalWrite(DCD_PIN, HIGH);
         else if (strcmp(fromHostbuffer, DCDdown) == 0)
             digitalWrite(DCD_PIN, LOW);
-        else if (strcmp(fromHostbuffer,  selfTest) == 0)
+        else if (strcmp(fromHostbuffer, selfTest) == 0)
             SelfTest();
         else if (strcmp(fromHostbuffer, knobOn) == 0)
             EEPROM.write(KNOB_EPROM_IDX, 1);
@@ -1847,12 +1858,19 @@ namespace diag {
             EEPROM.write(KNOB_REVERSE_IDX, 0);
         else if (strcmp(fromHostbuffer, knobFwd) == 0)
             EEPROM.write(KNOB_REVERSE_IDX, 1);
+        else if (strcmp(fromHostbuffer, lrNormal) == 0)
+            EEPROM.write(LR_SWITCH_REVERSE_IDX, 1);
+        else if (strcmp(fromHostbuffer, lrRev) == 0)
+            EEPROM.write(LR_SWITCH_REVERSE_IDX, 0);
         else if (strcmp(fromHostbuffer, hostDump) == 0)
         {
             echo = false;
-            Serial.print("EEPROM: ");
-            Serial.print(EEPROM.read(KNOB_EPROM_IDX));
-            Serial.print("DOTLEN="); Serial.print(cw::DOTLEN);
+            Serial.print("EEPROM: KnobEnabled=");
+            Serial.print((int)EEPROM.read(KNOB_EPROM_IDX));
+            Serial.print(" PTT delay="); Serial.print((int)EEPROM.read(PTT_DELAY_IDX));
+            Serial.print(" knobRev="); Serial.print((int)EEPROM.read(KNOB_REVERSE_IDX));
+            Serial.print(" LRreverse="); Serial.print((int)EEPROM.read(LR_SWITCH_REVERSE_IDX));
+            Serial.print(" DOTLEN="); Serial.print(cw::DOTLEN);
             Serial.print(" LTRLEN="); Serial.println(cw::LTRLEN);
         }
         else if (strcmp(fromHostbuffer, knob) == 0)
@@ -1861,6 +1879,21 @@ namespace diag {
             int spd = analogRead(SPEEDPOT_PIN);
             Serial.print("Pot="); Serial.println(spd);
             echo = false;
+        }
+        else if (strcmp(fromHostbuffer, potLR) == 0)
+        {
+            SPEEDTEST();
+        }
+        else if (strcmp(fromHostbuffer, sound) == 0)
+        {
+            SOUNDTEST();
+        }
+        else if (strcmp(fromHostbuffer, paddles) == 0)
+        {
+            Serial.print("Dot=");
+            Serial.print(digitalRead(CWDOT_PIN) == LOW ? "on" : "off");
+            Serial.print(" Dash=");
+            Serial.println(digitalRead(CWDASH_PIN) == LOW ? "on" : "off");
         }
         else
             echo = false; // unknown commands do NOT echo
@@ -1933,8 +1966,6 @@ namespace diag {
         }
     }
 
-    void SOUNDTEST();
-    void SPEEDTEST();
     void LoopbackTests();
     void RelayTests();
 
@@ -1992,7 +2023,7 @@ namespace diag {
         Serial.println(" of 1024.");
         delay(512);
 
-        int lr = digitalRead(LRSWITCH_PIN);
+        int lr = (digitalRead(LRSWITCH_PIN) != LOW) ^ (EEPROM.read(LR_SWITCH_REVERSE_IDX) == 0);
         Serial.print("Left/Right switch is set to ");
         if (lr == HIGH)
             Serial.println("Left");
