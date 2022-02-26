@@ -1,0 +1,13 @@
+Each file can be identify by its extension:
+
+.TSK or .SLK = top silkscreen layer
+.TSM or .SMT = top solder mask layer
+.TOP = top copper layer
+.GTP = top paste layer
+.IPT or .INT = top inner copper layer
+.BOT = bottom copper layer
+.IPB or .INB = bottom inner copper layer
+.BSM or .SMB = bottom solder mask layer
+.GBP = bottom paste layer
+.DRI = drill file
+.OLN = board outline 
