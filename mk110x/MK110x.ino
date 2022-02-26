@@ -1782,9 +1782,20 @@ namespace diag {
     const int HOST_BUFFER_LENGTH = 80;
     char fromHostbuffer[HOST_BUFFER_LENGTH + 1]; // +1 so we can add trailing null
     int charsInBuf = 0;
+    bool pauseBetweenTests;
     void SelfTest();
     void SOUNDTEST();
     void SPEEDTEST();
+
+    void pause()
+    {
+        if (!pauseBetweenTests)
+            return;
+        Serial.println(F(" ...any key to continue"));
+        while (!Serial.available());
+        Serial.read();
+        return;
+    }
 
     uint8_t asciiToBin(const char *p)
     {
@@ -1820,6 +1831,8 @@ namespace diag {
         static const char lrRev[] = "LRrev";
         static const char pttDel[] = "pttDel=";
         static const char paddles[] = "paddles";
+        static const char pauseOn[] = "pauseOn";
+        static const char pauseOff[] = "pauseOff";
         static const unsigned pttDelLen = -1 + sizeof(pttDel);
         if (strcmp(fromHostbuffer, printOn) == 0)
             printCommands = true;
@@ -1895,6 +1908,10 @@ namespace diag {
             Serial.print(" Dash=");
             Serial.println(digitalRead(CWDASH_PIN) == LOW ? "on" : "off");
         }
+        else if (strcmp(fromHostbuffer, pauseOn) == 0)
+            pauseBetweenTests = true;
+        else if (strcmp(fromHostbuffer, pauseOff) == 0)
+            pauseBetweenTests = false;
         else
             echo = false; // unknown commands do NOT echo
         // ...so TXD/RXD can be looped back when diag port disconnected.
@@ -1917,7 +1934,8 @@ namespace diag {
         {
             char input = Serial.read();
             static bool overflow = false;
-            if (input != '\r') // not a carriage return
+            bool inputIsNewline = (input == '\r') || (input == '\n');
+            if (!inputIsNewline) // not a carriage return
             {
                 if (charsInBuf >= HOST_BUFFER_LENGTH)
                 {
@@ -1931,7 +1949,7 @@ namespace diag {
                 }
             }
 
-            if (input == '\r')
+            if (inputIsNewline)
             {
                 if (charsInBuf > 0)
                 {
@@ -1949,7 +1967,8 @@ namespace diag {
 
     void LIGHTUP_Px(const uint8_t *p, int shift)
     {
-        Serial.println(F("L/R CW then PTT"));
+        Serial.println(F("L/R, then CW, then PTT"));
+        pause();
         for (unsigned i = 0; i < 3; i++)
         {
             aux::toggleInAux(*p);
@@ -1958,6 +1977,7 @@ namespace diag {
             aux::toggleInAux(*p++);
         }
         Serial.println(F("A3 down to A0"));
+        pause();
         for (unsigned i = 0; i < 4; i++)
         {
             aux::AuxBoardAnt = 1 << ((3 - i) + shift);
@@ -1974,6 +1994,7 @@ namespace diag {
         interrupts();
         for (;;)
         {
+            // initialize
             digitalWrite(CW_SIDETONE_PIN, LOW);
             aux::AuxBoardAnt = 0;
             aux::clearInAux(0xffu);
@@ -1981,9 +2002,11 @@ namespace diag {
             delay(128);
 
             Serial.println(F("Sidetone test"));
+            pause();
             SOUNDTEST();
 
             SPEEDTEST();
+            pause();
             LoopbackTests();
 
             Serial.println(F("Aux LED test on LPT right"));
@@ -2087,7 +2110,10 @@ namespace diag {
             digitalWrite(pinNumberOut, LOW);
         if (pinInAux)
             aux::clearInAux(pinInAux);
-        delay(error ? 1000 : 128);
+        if (error)
+            delay(1000);
+        else
+            Serial.println("OK");
     }
 
     void LoopbackTests()
@@ -2097,18 +2123,23 @@ namespace diag {
         aux::loop();
 
         Serial.println(F("Checking all CW+PTT lines output off"));
+        pause();
         loopback(-1, -1, 0);
 
         Serial.println(F("CW Left"));
+        pause();
         loopback(CWL_PIN, FOOTRING_PIN, aux::CWOUTL_M);
 
         Serial.println(F("PTT Left"));
+        pause();
         loopback(PTTL_PIN, FOOTTIP_PIN, aux::PTTOUTL_M);
 
         Serial.println(F("CW Right"));
+        pause();
         loopback(CWR_PIN, CWDASH_PIN, aux::CWOUTR_M);
 
         Serial.println(F("PTT Right"));
+        pause();
         loopback(PTTR_PIN, CWDOT_PIN, aux::PTTOUTR_M);
     }
 
@@ -2117,10 +2148,11 @@ namespace diag {
         aux::AuxBoardAnt = 0;
         aux::clearInAux(0xffu);
         aux::loop();
-        Serial.println(F("Relays and RX-L and RX-R LEDs off."));
+        Serial.println(F("Relays and RX-L and RX-R LEDs are off."));
         delay(2000);
 
-        Serial.println(F("RX-L LED flash"));
+        Serial.println(F("RX-L LED flash (Right A0+A1 source)"));
+        pause();
         aux::AuxBoardAnt = 3;
         for (int i = 0; i < 20; i++)
         {
@@ -2130,6 +2162,7 @@ namespace diag {
         }
 
         Serial.println(F("RX-L relay activate. LED OFF"));
+        pause();
         aux::setInAux(aux::RXAUDL_M);
         for (int i = 0; i < 20; i++)
         {
@@ -2138,7 +2171,8 @@ namespace diag {
           aux::AuxBoardAnt ^= 3;
         }
 
-        Serial.println(F("RX-R relay activate. R LED FLASH"));
+        Serial.println(F("RX-R relay activate. R LED FLASH (Right A0+A1 source)"));
+        pause();
         aux::setInAux(aux::RXAUDR_M);
         for (int i = 0; i < 20; i++)
         {
@@ -2147,7 +2181,8 @@ namespace diag {
           aux::AuxBoardAnt ^= 3;
         }
 
-        Serial.println(F("RX-L relay deactivate. both flash"));
+        Serial.println(F("RX-L relay deactivate. both flash (Right A0+A1 source)"));
+        pause();
         aux::clearInAux(aux::RXAUDL_M);
         for (int i = 0; i < 20; i++)
         {
