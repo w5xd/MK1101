@@ -2079,7 +2079,7 @@ namespace diag {
         if (pinInAux)
             aux::setInAux(pinInAux);
         aux::loop();
-        delay(1);
+        delay(2);
 
         // Read the 4 inputs. Only one of them should be low (except FOOTRING)
 
@@ -2090,21 +2090,25 @@ namespace diag {
         {
             Serial.println(CWL_ERROR);
             error = true;
+            pause();
         }
         if (digitalRead(CWDASH_PIN) != ((pinNumberIn == CWDASH_PIN) ? LOW : HIGH))
         {
             Serial.println(CWR_ERROR);
             error = true;
+            pause();
         }
         if (digitalRead(FOOTTIP_PIN) != ((pinNumberIn == FOOTTIP_PIN) ? LOW : HIGH))
         {
             Serial.println(PTTL_ERROR);
             error = true;
+            pause();
         }
         if (digitalRead(CWDOT_PIN) != ((pinNumberIn == CWDOT_PIN) ? LOW : HIGH))
         {
             Serial.println(PTTR_ERROR);
             error = true;
+            pause();
         }
         if (pinNumberOut > 0)
             digitalWrite(pinNumberOut, LOW);
