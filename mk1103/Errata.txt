@@ -2,12 +2,8 @@ Errata
 
 1. The solder mask for the main board does NOT fit after the PCB is cut for the MK-1103 configuration. Therefore: do NOT cut the PCB
 until AFTER the surface mount components are baked on.
-2. C101 and C102 are too close to the paddles input connector. work around: the 3D printed enclosure accounts for the connector displacement
-3. D13 at the 12V DC input is too close to the 12 Power input connector. It CANNOT be placed. work around: place it on the bottom 
-side across the holes for the 12V input connector.
-4. The biggest two mounting holes for the 9 pin D connector are too small in the PCB. The pins can be crushed with needle nose and forced in.
 
-The only bottom-side components (besides the D13 issue above) are: 
+2. The only bottom-side components (besides the D13 issue above) are: 
     FT232H breakout
     Ptt out connectors
     RX audio in connectors (and these are only present in the MK-1104 configuration)
