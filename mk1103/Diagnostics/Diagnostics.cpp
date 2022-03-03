@@ -12,9 +12,33 @@
 #include <memory>
 #include <algorithm>
 
+/* This program controls the AC0 and AC1 outputs on the FT232H chip made by ftdichip.com and used in
+* the MK-1103 and MK-1104. Those keyers have a solid state relay circuit on the TXD and RXD lines
+* from the FT232H that are normally routed to the RS232 level converter and the back panel Rig connector.
+* If AC0 is held low with AC1 high, the relay latches so that the arduino is on the COM port such that
+* its diagnostics can be run from through the FT232H. The Arduino can also have its program uploaded
+* with the latch in that state.
+* 
+* The FT232H has EEPROM settings that determine its power up state for AC0 and AC1 (among other settings.)
+* The EEPROM can be programmed using the FT-PROG program from ftdi: https://ftdichip.com/utilities/#ft_prog
+* The MK-1103 and MK-1104 are specified to be programmed with EEPROM setting Drive_0 for AC1 and Drive_1 for
+* AC0, which routes the serial UART to the RS232 back panel Rig connector.
+* 
+* There are alternatives. Programming the EEPROM for AC1 high and AC0 low puts the FT232H and solid state
+* relay in diagnostic mode at power up (and therefore disables the Rig connector.)
+* 
+* The power up reset circuit on pin 1 of U20A unfortunately doesn't hold the pin low long
+* enough to override the EEPROM settings. But programming the EEPROM for AC0 to Drive_1 and AC1 to Tristate sets
+* the EEPROM to leave the latch unchanged. That makes this program useful. Invoking this program for that EEPROM
+* setup sets or clears the latch:
+*   Diagnostics COMn on    sets the latch for diagnostics
+*   Diagnostics COMn off   sets the latch for RS232 on the Rig connector.
+*/
+
 typedef std::function<bool(FT_HANDLE, const std::string&)> iterFcn_t; // function OWNS FT_HANDLE
 static void iterateDeviceInfoList(const iterFcn_t& fcn)
-{
+{   // use the ftd2xx.dll, auto-magically installed by the FT232H USB device drivers, to iterate
+    // through all the ftdi chips on this machine.
     DWORD nc;
     FT_STATUS stat = FT_CreateDeviceInfoList(&nc);
     if ((FT_OK == stat) && nc > 0)
@@ -120,7 +144,7 @@ namespace {
 
         ftStatus |= FT_SetLatencyTimer(handle, LATENCY_MSEC);
         ftStatus |= FT_SetBitMode(handle, 0x0, 0x00); 					// Reset the mode to whatever is set in EEPROM
-        ftStatus |= FT_SetBitMode(handle, 0x0, 0x02);	 					// Enable MPSSE mode
+        ftStatus |= FT_SetBitMode(handle, 0x0, 0x02);	 					// Enable MPSSE mode.. COM port UART won't work now.
         if (ftStatus != FT_OK)
             return ftStatus; // really can't talk to this device
 
@@ -148,7 +172,9 @@ namespace {
         DWORD dwNumBytesSent;
         ftStatus = FT_Write(handle, &OutputBuffer[0], OutputBuffer.size(), &dwNumBytesSent);
         SyncBadCommand(handle, 0xAA);
-        ftStatus |= FT_SetBitMode(handle, 0, 0); 					// Reset the mode
+        ftStatus |= FT_SetBitMode(handle, 0, 0); 					// Reset the mode. The FT232H EEPROM settings for AC0/AC1 are invoked
+        // don't bother trying to omit this FT_SetBitMode to 0,0 in hopes of keeping AC0/AC1 as latched. The chip won't run its UART that way. 
+        // that is, the serial port won't work
         return ftStatus;
     }
 
