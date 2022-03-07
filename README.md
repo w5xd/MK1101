@@ -12,17 +12,17 @@ The TextFixture and the Arduino sketch are shared among all the designs.
 MK1104-schematic.sch is an <a href='http://expresspcb.com'>expresspcb.com</a> schematic for both the MK1103 and MK1104.<br/>
 MK1103-main.rrb is an <a href='http://expresspcb.com'>expresspcb.com</a> printed circuit layout for the main board used by both MK1103 and MK1104<br/>
 MK1104-aux.rrb is an <a href='http://expresspcb.com'>expresspcb.com</a> printed circuit layout for the aux board used by the MK-1104.<br/>
-TestFixture.rrb is an <a href='http://expresspcb.com'>expresspcb.com</a> printed circuit layout for a test fixture that eases diagnosis.<br/>
+TestFixture.rrb is an <a href='http://expresspcb.com'>expresspcb.com</a> printed circuit layout for a test fixture that eases check out and diagnostics.<br/>
 MK110x.ino is the arduino firmware for all the variants.<br/>
 
-<h2>MK-1101 and MK-1102. AL enclosures from Bud</h2>
+<p></p>
+<h2>MK-1101 and MK-1102. Aluminum enclosures from Bud</h2>
 
 MK1102-schematic.sch is an <a href='http://expresspcb.com'>expresspcb.com</a> schematic for both the MK1101 and MK1102.<br/>
 MK1101-main.rrb is an <a href='http://expresspcb.com'>expresspcb.com</a> printed circuit layout for the main board used by both MK1101 and MK1102<br/>
 MK1102-aux.rrb is an <a href='http://expresspcb.com'>expresspcb.com</a> printed circuit layout for the aux board used by the MK-1102.<br/>
-TestFixture.rrb is an <a href='http://expresspcb.com'>expresspcb.com</a> printed circuit layout for a test fixture that eases diagnosis.<br/>
+TestFixture.rrb is an <a href='http://expresspcb.com'>expresspcb.com</a> printed circuit layout for a test fixture that eases check out and diagnostics.<br/>
 MK110x.ino is the arduino firmware.<br/>
 MK1101-drilling-template.odg is an OpenOffice document with the drilling template drawing.<br/>
 MK1101-lettering.odg is an OpenOffice document with the silkscreening.<br/>
-
 pdfs of the OpenOffice templates are also in the pdf folder of this source archive.
