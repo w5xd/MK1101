@@ -1,0 +1,9 @@
+Errata
+
+1. The solder mask for the main board does NOT fit after the PCB is cut for the MK-1103 configuration. Therefore: do NOT cut the PCB
+until AFTER the surface mount components are baked on.
+
+2. The only bottom-side components (besides the D13 issue above) are: 
+    FT232H breakout
+    Ptt out connectors
+    RX audio in connectors (and these are only present in the MK-1104 configuration)
