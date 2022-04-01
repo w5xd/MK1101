@@ -28,6 +28,7 @@
 #define MK1101_BUILD_DEFINITION 1
 #define MK1102_BUILD_DEFINITION 1 // MK1101/MK1102 have identical code
 #define MK1103_BUILD_DEFINITION 3 // different because the serial out on SPI has one more byte
+#define MK1104_BUILD_DEFINITION MK1103_BUILD_DEFINITION // these two run identical firmware
 
 #define MK110X_BUILD MK1103_BUILD_DEFINITION
 
@@ -197,12 +198,12 @@ void setup()
 #if (MK110X_BUILD == MK1101_BUILD_DEFINITION)
         F("MK1101/MK1102")
 #else
-        F("MK1103")
+        F("MK1103/MK1104")
 #endif
     );
 
     // These pins have nothing to do with Serial library
-    // The MK-1101 is the Data Set (not Data Terminal)
+    // The MK-110x is the Data Set (not Data Terminal)
     pinMode(CTS_PIN, OUTPUT);
     pinMode(DSR_PIN, OUTPUT);
     pinMode(DCD_PIN, OUTPUT);
