@@ -22,4 +22,7 @@
   <ItemGroup>
     <Library Include="ftd2xx.lib" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.md" />
+  </ItemGroup>
 </Project>
